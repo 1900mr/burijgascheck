@@ -1,58 +1,56 @@
 const TelegramBot = require('node-telegram-bot-api');
-const ExcelJS = require('exceljs');  // استيراد مكتبة exceljs
-require('dotenv').config();  // إذا كنت تستخدم متغيرات بيئية
-const express = require('express');  // إضافة Express لتشغيل السيرفر
+const ExcelJS = require('exceljs'); // استيراد مكتبة exceljs
+require('dotenv').config(); // إذا كنت تستخدم متغيرات بيئية
+const express = require('express'); // إضافة Express لتشغيل السيرفر
 
 // إعداد سيرفر Express (لتشغيل التطبيق على Render أو في بيئة محلية)
 const app = express();
+const port = process.env.PORT || 4000; // المنفذ الافتراضي
 
-// تحديد المنفذ باستخدام متغير البيئة PORT
-const port = process.env.PORT || 4000;  // إذا لم يكن هناك PORT في البيئة، سيعمل على 4000
+// استبدل بالتوكن الخاص بك
+const token = process.env.TELEGRAM_BOT_TOKEN || '7201507244:AAFmUzJTZ0CuhWxTE_BjwQJ-XB3RXlYMKYU';
 
-// استبدل 'YOUR_BOT_TOKEN_HERE' بالتوكن الخاص بالبوت
-const token = process.env.TELEGRAM_BOT_TOKEN || '7203035834:AAFsWjHtF2q3p-dGH_6mm9IykYqX4Erfrnc';
-
-// إنشاء البوت مع التفعيل
+// إنشاء البوت
 const bot = new TelegramBot(token, { polling: true });
 
-// تحميل البيانات من ملف Excel
+// تخزين البيانات من Excel
 let data = {};
 
-// قراءة البيانات من ملف Excel باستخدام exceljs
+// دالة لتحميل البيانات من Excel
 async function loadDataFromExcel() {
     try {
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile('gas18-11-2024.xlsx');  // تأكد من أن اسم الملف صحيح
-        const worksheet = workbook.worksheets[0];  // الحصول على أول ورقة عمل
-        
+        await workbook.xlsx.readFile('gas18-11-2024.xlsx'); // اسم الملف
+        const worksheet = workbook.worksheets[0]; // أول ورقة عمل
+
         worksheet.eachRow((row, rowNumber) => {
-            const idNumber = row.getCell(1).value;  // أول عمود يحتوي على رقم الهوية
-            const name = row.getCell(2).value;  // ثاني عمود يحتوي على اسم الطالب
-            const phoneNumber = row.getCell(3).value;  // رقم الجوال
-            const province = row.getCell(4).value;  // المحافظة
-            const district = row.getCell(5).value;  // المحافظة الثانية
-            const city = row.getCell(6).value;  // المدينة
-            const area = row.getCell(7).value;  // الحي / المنطقة
-            const distributorId = row.getCell(8).value;  // هوية الموزع
-            const distributorName = row.getCell(9).value;  // اسم الموزع
-            const distributorPhone = row.getCell(10).value;  // رقم جوال الموزع
-            const status = row.getCell(11).value;  // الحالة
-            const orderDate = row.getCell(12).value;  // تاريخ الطلب
-            
-            // تخزين البيانات في كائن باستخدام رقم الهوية كمفتاح
+            // قراءة القيم من الصفوف
+            const idNumber = row.getCell(1).value?.toString().trim(); // رقم الهوية
+            const name = row.getCell(2).value?.toString().trim(); // اسم الطالب
+            const phoneNumber = row.getCell(3).value?.toString().trim(); // رقم الجوال
+            const province = row.getCell(4).value?.toString().trim(); // المحافظة
+            const district = row.getCell(5).value?.toString().trim(); // المحافظة الثانية
+            const city = row.getCell(6).value?.toString().trim(); // المدينة
+            const area = row.getCell(7).value?.toString().trim(); // الحي/المنطقة
+            const distributorId = row.getCell(8).value?.toString().trim(); // هوية الموزع
+            const distributorName = row.getCell(9).value?.toString().trim(); // اسم الموزع
+            const distributorPhone = row.getCell(10).value?.toString().trim(); // رقم الموزع
+            const status = row.getCell(11).value?.toString().trim(); // الحالة
+            const orderDate = row.getCell(12).value?.toString().trim(); // تاريخ الطلب
+
             if (idNumber && name) {
-                data[idNumber.trim()] = {
-                    name: name.trim(),
-                    phoneNumber: phoneNumber ? phoneNumber.trim() : "غير متوفر",
-                    province: province ? province.trim() : "غير متوفر",
-                    district: district ? district.trim() : "غير متوفر",
-                    city: city ? city.trim() : "غير متوفر",
-                    area: area ? area.trim() : "غير متوفر",
-                    distributorId: distributorId ? distributorId.trim() : "غير متوفر",
-                    distributorName: distributorName ? distributorName.trim() : "غير متوفر",
-                    distributorPhone: distributorPhone ? distributorPhone.trim() : "غير متوفر",
-                    status: status ? status.trim() : "غير متوفر",
-                    orderDate: orderDate ? orderDate.trim() : "غير متوفر"
+                data[idNumber] = {
+                    name: name || "غير متوفر",
+                    phoneNumber: phoneNumber || "غير متوفر",
+                    province: province || "غير متوفر",
+                    district: district || "غير متوفر",
+                    city: city || "غير متوفر",
+                    area: area || "غير متوفر",
+                    distributorId: distributorId || "غير متوفر",
+                    distributorName: distributorName || "غير متوفر",
+                    distributorPhone: distributorPhone || "غير متوفر",
+                    status: status || "غير متوفر",
+                    orderDate: orderDate || "غير متوفر",
                 };
             }
         });
@@ -66,27 +64,29 @@ async function loadDataFromExcel() {
 // تحميل البيانات عند بدء التشغيل
 loadDataFromExcel();
 
-// الرد عند بدء المحادثة
+// الرد على أوامر البوت
 bot.onText(/\/start/, (msg) => {
     bot.sendMessage(msg.chat.id, "مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
 });
 
-// الرد عند استقبال رسالة
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
-    const idNumber = msg.text.trim();  // أخذ رقم الهوية من رسالة المستخدم
+    const idNumber = msg.text.trim(); // رقم الهوية
 
-    if (idNumber === '/start') return; // تجاهل أمر /start
+    if (idNumber === '/start') return;
 
     const user = data[idNumber];
     if (user) {
-        // إرسال التفاصيل بناءً على رقم الهوية
         const response = `
 الاسم: ${user.name}
+المحافظة: ${user.province}
+المدينة: ${user.city}
 الحي / المنطقة: ${user.area}
 هوية الموزع: ${user.distributorId}
 اسم الموزع: ${user.distributorName}
 رقم جوال الموزع: ${user.distributorPhone}
+الحالة: ${user.status}
+تاريخ الطلب: ${user.orderDate}
         `;
         bot.sendMessage(chatId, response);
     } else {
@@ -94,7 +94,7 @@ bot.on('message', (msg) => {
     }
 });
 
-// بدء السيرفر
+// تشغيل السيرفر
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
