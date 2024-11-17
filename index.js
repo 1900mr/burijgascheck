@@ -2,13 +2,15 @@ const TelegramBot = require('node-telegram-bot-api');
 const ExcelJS = require('exceljs'); // استيراد مكتبة exceljs
 require('dotenv').config(); // إذا كنت تستخدم متغيرات بيئية
 const express = require('express'); // إضافة Express لتشغيل السيرفر
-app.get('/', (req, res) => {
-    res.send('The server is running successfully.');
-});
+
 
 // إعداد سيرفر Express (لتشغيل التطبيق على Render أو في بيئة محلية)
 const app = express();
 const port = process.env.PORT || 4000; // المنفذ الافتراضي
+app.get('/', (req, res) => {
+    res.send('The server is running successfully.');
+});
+
 
 // استبدل بالتوكن الخاص بك
 const token = process.env.TELEGRAM_BOT_TOKEN || '7201507244:AAFmUzJTZ0CuhWxTE_BjwQJ-XB3RXlYMKYU';
