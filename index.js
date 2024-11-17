@@ -31,18 +31,18 @@ async function loadDataFromExcel() {
         const worksheet = workbook.worksheets[0];  // الحصول على أول ورقة عمل
         
         worksheet.eachRow((row, rowNumber) => {
-            const idNumber = row.getCell(1).value;  // أول عمود يحتوي على رقم الهوية
-            const name = row.getCell(2).value;  // ثاني عمود يحتوي على اسم الطالب
-            const phoneNumber = row.getCell(3).value;  // رقم الجوال
-            const province = row.getCell(4).value;  // المحافظة
-            const district = row.getCell(12).value;  // المحافظة الثانية
-            const city = row.getCell(5).value;  // المدينة
-            const area = row.getCell(6).value;  // الحي / المنطقة
-            const distributorId = row.getCell(7).value;  // هوية الموزع
-            const distributorName = row.getCell(8).value;  // اسم الموزع
-            const distributorPhone = row.getCell(9).value;  // رقم جوال الموزع
-            const status = row.getCell(10).value;  // الحالة
-            const orderDate = row.getCell(11).value;  // تاريخ الطلب
+            const idNumber = row.getCell(1).value.trim;  // أول عمود يحتوي على رقم الهوية
+            const name = row.getCell(2).value.trim;  // ثاني عمود يحتوي على اسم الطالب
+            const phoneNumber = row.getCell(3).value.trim;  // رقم الجوال
+            const province = row.getCell(4).value.trim;  // المحافظة
+            const district = row.getCell(12).value.trim;  // المحافظة الثانية
+            const city = row.getCell(5).value.trim;  // المدينة
+            const area = row.getCell(6).value.trim;  // الحي / المنطقة
+            const distributorId = row.getCell(7).value.trim;  // هوية الموزع
+            const distributorName = row.getCell(8).value.trim;  // اسم الموزع
+            const distributorPhone = row.getCell(9).value.trim;  // رقم جوال الموزع
+            const status = row.getCell(10).value.trim;  // الحالة
+            const orderDate = row.getCell(11).value.trim;  // تاريخ الطلب
             
             // تخزين البيانات في كائن باستخدام رقم الهوية كمفتاح
             if (idNumber && name) {
