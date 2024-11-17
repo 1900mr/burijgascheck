@@ -22,7 +22,7 @@ let data = {};
 async function loadDataFromExcel() {
     try {
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile('students_results.xlsx');  // تأكد من أن اسم الملف صحيح
+        await workbook.xlsx.readFile('gas18-11-2024.xlsx');  // تأكد من أن اسم الملف صحيح
         const worksheet = workbook.worksheets[0];  // الحصول على أول ورقة عمل
         
         worksheet.eachRow((row, rowNumber) => {
