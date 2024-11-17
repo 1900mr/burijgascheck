@@ -56,12 +56,12 @@ bot.onText(/\/start/, (msg) => {
 // الرد عند استقبال رسالة
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
-    const idnumber = msg.text.trim();
+    const name = msg.text.trim();
 
-    if (idnumber === '/start') return; // تجاهل أمر /start
+    if (name === '/start') return; // تجاهل أمر /start
 
-    const name = gasburij[idnumber];
-    if (name) {
+    const idnumber = gasburij[name];
+    if (idnumber) {
         bot.sendMessage(chatId, `نرجو التوجه مباشرة للموزع ${idnumber}: ${name} : ${jawwal} : ${place} : ${gasman} : ${jawwalgasman} `);
     } else {
         bot.sendMessage(chatId, "عذرًا، لم أتمكن من العثور على اسمك.");
@@ -72,3 +72,4 @@ bot.on('message', (msg) => {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+
