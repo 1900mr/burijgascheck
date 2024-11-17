@@ -2,6 +2,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const ExcelJS = require('exceljs'); // استيراد مكتبة exceljs
 require('dotenv').config(); // إذا كنت تستخدم متغيرات بيئية
 const express = require('express'); // إضافة Express لتشغيل السيرفر
+app.get('/', (req, res) => {
+    res.send('The server is running successfully.');
+});
 
 // إعداد سيرفر Express (لتشغيل التطبيق على Render أو في بيئة محلية)
 const app = express();
