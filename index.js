@@ -1,4 +1,3 @@
-// استيراد المكتبات المطلوبة
 const TelegramBot = require('node-telegram-bot-api');
 const ExcelJS = require('exceljs');  // استيراد مكتبة exceljs
 require('dotenv').config();  // إذا كنت تستخدم متغيرات بيئية
@@ -11,31 +10,50 @@ const app = express();
 const port = process.env.PORT || 4000;  // إذا لم يكن هناك PORT في البيئة، سيعمل على 4000
 
 // استبدل 'YOUR_BOT_TOKEN_HERE' بالتوكن الخاص بالبوت
-const token = process.env.TELEGRAM_BOT_TOKEN || '7201507244:AAFmUzJTZ0CuhWxTE_BjwQJ-XB3RXlYMKYU';
+const token = process.env.TELEGRAM_BOT_TOKEN || '7203035834:AAFsWjHtF2q3p-dGH_6mm9IykYqX4Erfrnc';
 
 // إنشاء البوت مع التفعيل
 const bot = new TelegramBot(token, { polling: true });
 
 // تحميل البيانات من ملف Excel
-let gasburij = {};
+let data = {};
 
 // قراءة البيانات من ملف Excel باستخدام exceljs
 async function loadDataFromExcel() {
     try {
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile('gas18-11-2024.xlsx');  // تأكد من أن اسم الملف صحيح
+        await workbook.xlsx.readFile('students_results.xlsx');  // تأكد من أن اسم الملف صحيح
         const worksheet = workbook.worksheets[0];  // الحصول على أول ورقة عمل
         
         worksheet.eachRow((row, rowNumber) => {
-            const idnumber = row.getCell(1).value;  // أول عمود يحتوي على اسم الطالب
-            const name = row.getCell(2).value;  // ثاني عمود يحتوي على النتيجة
-            const jawwal = row.getCell(3).value;
-            const place = row.getCell(6).value;
-            const gasman = row.getCell(8).value;
-            const jawwalgasman = row.getCell(9).value;
-
-            if (idnumber && name) {
-                gasburij[idnumber.trim()] = name.trim();
+            const idNumber = row.getCell(1).value;  // أول عمود يحتوي على رقم الهوية
+            const name = row.getCell(2).value;  // ثاني عمود يحتوي على اسم الطالب
+            const phoneNumber = row.getCell(3).value;  // رقم الجوال
+            const province = row.getCell(4).value;  // المحافظة
+            const district = row.getCell(5).value;  // المحافظة الثانية
+            const city = row.getCell(6).value;  // المدينة
+            const area = row.getCell(7).value;  // الحي / المنطقة
+            const distributorId = row.getCell(8).value;  // هوية الموزع
+            const distributorName = row.getCell(9).value;  // اسم الموزع
+            const distributorPhone = row.getCell(10).value;  // رقم جوال الموزع
+            const status = row.getCell(11).value;  // الحالة
+            const orderDate = row.getCell(12).value;  // تاريخ الطلب
+            
+            // تخزين البيانات في كائن باستخدام رقم الهوية كمفتاح
+            if (idNumber && name) {
+                data[idNumber.trim()] = {
+                    name: name.trim(),
+                    phoneNumber: phoneNumber ? phoneNumber.trim() : "غير متوفر",
+                    province: province ? province.trim() : "غير متوفر",
+                    district: district ? district.trim() : "غير متوفر",
+                    city: city ? city.trim() : "غير متوفر",
+                    area: area ? area.trim() : "غير متوفر",
+                    distributorId: distributorId ? distributorId.trim() : "غير متوفر",
+                    distributorName: distributorName ? distributorName.trim() : "غير متوفر",
+                    distributorPhone: distributorPhone ? distributorPhone.trim() : "غير متوفر",
+                    status: status ? status.trim() : "غير متوفر",
+                    orderDate: orderDate ? orderDate.trim() : "غير متوفر"
+                };
             }
         });
 
@@ -50,21 +68,29 @@ loadDataFromExcel();
 
 // الرد عند بدء المحادثة
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "مرحبًا! أدخل اسمك للحصول على نتيجتك.");
+    bot.sendMessage(msg.chat.id, "مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
 });
 
 // الرد عند استقبال رسالة
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
-    const name = msg.text.trim();
+    const idNumber = msg.text.trim();  // أخذ رقم الهوية من رسالة المستخدم
 
-    if (name === '/start') return; // تجاهل أمر /start
+    if (idNumber === '/start') return; // تجاهل أمر /start
 
-    const idnumber = gasburij[name];
-    if (idnumber) {
-        bot.sendMessage(chatId, `نرجو التوجه مباشرة للموزع ${idnumber}: ${name} : ${jawwal} : ${place} : ${gasman} : ${jawwalgasman} `);
+    const user = data[idNumber];
+    if (user) {
+        // إرسال التفاصيل بناءً على رقم الهوية
+        const response = `
+الاسم: ${user.name}
+الحي / المنطقة: ${user.area}
+هوية الموزع: ${user.distributorId}
+اسم الموزع: ${user.distributorName}
+رقم جوال الموزع: ${user.distributorPhone}
+        `;
+        bot.sendMessage(chatId, response);
     } else {
-        bot.sendMessage(chatId, "عذرًا، لم أتمكن من العثور على اسمك.");
+        bot.sendMessage(chatId, "عذرًا، لم أتمكن من العثور على بيانات لرقم الهوية المدخل.");
     }
 });
 
@@ -72,4 +98,3 @@ bot.on('message', (msg) => {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
-
