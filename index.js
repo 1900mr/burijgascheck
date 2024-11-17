@@ -35,7 +35,7 @@ async function loadDataFromExcel() {
             const name = row.getCell(2).value.trim;  // ثاني عمود يحتوي على اسم الطالب
             const phoneNumber = row.getCell(3).value.trim;  // رقم الجوال
             const province = row.getCell(4).value.trim;  // المحافظة
-            const district = row.getCell(12).value.trim;  // المحافظة الثانية
+            const district = row.getCell(12).value;  // المحافظة الثانية
             const city = row.getCell(5).value.trim;  // المدينة
             const area = row.getCell(6).value.trim;  // الحي / المنطقة
             const distributorId = row.getCell(7).value.trim;  // هوية الموزع
