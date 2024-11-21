@@ -63,14 +63,20 @@ loadDataFromExcel();
 
 // الرد على أوامر البوت
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, "مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
 });
 
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const idNumber = msg.text.trim(); // رقم الهوية
 
-    if (idNumber === '/start') return;
+    if (idNumber === '/start') return; // تجاهل الأمر start
+
+    if (!idNumber) {
+        bot.sendMessage(chatId, "❌ يُرجى إدخال رقم الهوية.");
+        return;
+    }
 
     const user = data[idNumber];
     if (user) {
@@ -94,6 +100,12 @@ bot.on('message', (msg) => {
 
 // معالج الأخطاء العامة للبوت
 bot.on("polling_error", (error) => {
-    console.error("خطأ في polling:", error.code); // يمكنك إضافة المزيد من المعالجة هنا
+    console.error("خطأ في polling:", error.code); // طباعة الخطأ
     bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في البوت: ${error.code}`);
+});
+
+// إضافة سجل للأخطاء غير المعروفة
+bot.on("webhook_error", (error) => {
+    console.error("خطأ في Webhook:", error);
+    bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في Webhook: ${error.message}`);
 });
