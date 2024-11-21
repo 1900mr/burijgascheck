@@ -87,9 +87,11 @@ bot.on('message', (msg) => {
         🗺️ *المحافظة*: ${user.province}
         🏙️ *المدينة*: ${user.city}
         📍 *الحي / المنطقة*: ${user.area}
+        
         🏷️ *اسم الموزع*: ${user.distributorName}
         ☎️ *رقم جوال الموزع*: ${user.distributorPhone}
         🆔 *هوية الموزع*: ${user.distributorId}
+        
         ✅ *الحالة*: ${user.status}
         📅 *تاريخ الطلب*: ${user.orderDate}
         `;
