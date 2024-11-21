@@ -1,29 +1,22 @@
 const TelegramBot = require('node-telegram-bot-api');
 const ExcelJS = require('exceljs'); // استيراد مكتبة exceljs
-require('dotenv').config(); // إذا كنت تستخدم متغيرات بيئية
+require('dotenv').config(); // استخدام متغيرات بيئية
 const express = require('express'); // إضافة Express لتشغيل السيرفر
 
-// إعداد سيرفر Express
+// إعداد سيرفر Express (لتشغيل التطبيق على Render أو بيئة أخرى)
 const app = express();
-const port = process.env.PORT || 4000; // المنفذ الافتراضي
-app.get('/', (req, res) => {
-    res.send('🚀 The server is running successfully.');
-});
+app.use(express.json()); // للتعامل مع طلبات JSON
+
+// إعداد المنفذ وURL الخاص بـ Webhook
+const port = process.env.PORT || 4000;
+const webhookUrl = process.env.WEBHOOK_URL || `https://your-webhook-url.com`;
 
 // استبدل بالتوكن الخاص بك
-const token = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_TELEGRAM_BOT_TOKEN';
+const token = process.env.TELEGRAM_BOT_TOKEN || '7201507244:AAFmUzJTZ0CuhWxTE_BjwQJ-XB3RXlYMKYU';
 
-// حذف Webhook قبل بدء تشغيل البوت
-const bot = new TelegramBot(token, { polling: false });
-bot.deleteWebhook().then(() => {
-    console.log('✅ Webhook has been deleted successfully.');
-    
-    // تفعيل Polling بعد التأكد من حذف Webhook
-    bot.startPolling();
-    console.log('🚀 Bot is now running with polling.');
-}).catch((error) => {
-    console.error('❌ Failed to delete Webhook:', error.message);
-});
+// إنشاء البوت باستخدام Webhook
+const bot = new TelegramBot(token, { webHook: true });
+bot.setWebHook(`${webhookUrl}/bot${token}`);
 
 // تخزين البيانات من Excel
 let data = {};
@@ -35,12 +28,12 @@ async function loadDataFromExcel() {
         await workbook.xlsx.readFile('gas18-11-2024.xlsx'); // اسم الملف
         const worksheet = workbook.worksheets[0]; // أول ورقة عمل
 
-        worksheet.eachRow((row, rowNumber) => {
+        worksheet.eachRow((row) => {
+            // قراءة القيم من الصفوف
             const idNumber = row.getCell(1).value?.toString().trim(); // رقم الهوية
             const name = row.getCell(2).value?.toString().trim(); // اسم الطالب
             const phoneNumber = row.getCell(3).value?.toString().trim(); // رقم الجوال
             const province = row.getCell(4).value?.toString().trim(); // المحافظة
-            const district = row.getCell(12).value?.toString().trim(); // المدينة
             const city = row.getCell(5).value?.toString().trim(); // المدينة
             const area = row.getCell(6).value?.toString().trim(); // الحي/المنطقة
             const distributorId = row.getCell(7).value?.toString().trim(); // هوية الموزع
@@ -48,13 +41,13 @@ async function loadDataFromExcel() {
             const distributorPhone = row.getCell(9).value?.toString().trim(); // رقم الموزع
             const status = row.getCell(10).value?.toString().trim(); // الحالة
             const orderDate = row.getCell(11).value?.toString().trim(); // تاريخ الطلب
+            const district = row.getCell(12).value?.toString().trim();
 
             if (idNumber && name) {
                 data[idNumber] = {
                     name: name || "غير متوفر",
                     phoneNumber: phoneNumber || "غير متوفر",
                     province: province || "غير متوفر",
-                    district: district || "غير متوفر",
                     city: city || "غير متوفر",
                     area: area || "غير متوفر",
                     distributorId: distributorId || "غير متوفر",
@@ -62,11 +55,12 @@ async function loadDataFromExcel() {
                     distributorPhone: distributorPhone || "غير متوفر",
                     status: status || "غير متوفر",
                     orderDate: orderDate || "غير متوفر",
+                    district: district || "غير متوفر",
                 };
             }
         });
 
-        console.log('✅ تم تحميل البيانات بنجاح.');
+        console.log('✅ تم تحميل البيانات من Excel بنجاح.');
     } catch (error) {
         console.error('❌ حدث خطأ أثناء قراءة ملف Excel:', error.message);
     }
@@ -75,36 +69,44 @@ async function loadDataFromExcel() {
 // تحميل البيانات عند بدء التشغيل
 loadDataFromExcel();
 
-// الرد على أوامر البوت
-bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(
-        msg.chat.id,
-        "👋 مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.\n🔍 للبحث برقم الهوية."
-    );
+// إعداد مسار Webhook
+app.post(`/bot${token}`, (req, res) => {
+    bot.processUpdate(req.body); // تمرير التحديثات إلى البوت
+    res.sendStatus(200);
 });
 
-bot.on('message', (msg) => {
-    const chatId = msg.chat.id;
-    const idNumber = msg.text.trim(); // رقم الهوية
+// الرد على أوامر البوت
+bot.onText(/\/start/, (msg) => {
+    bot.sendMessage(msg.chat.id, "👋 مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
+});
 
-    if (idNumber === '/start') return;
+bot.on('message', async (msg) => {
+    try {
+        const chatId = msg.chat.id;
+        const idNumber = msg.text.trim(); // رقم الهوية
 
-    const user = data[idNumber];
-    if (user) {
-        const response = `
-        👤 *الاسم*: ${user.name}
-        🗺️ *المحافظة*: ${user.province}
-        🏙️ *المدينة*: ${user.city}
-        📍 *الحي / المنطقة*: ${user.area}
-        🆔 *هوية الموزع*: ${user.distributorId}
-        🏷️ *اسم الموزع*: ${user.distributorName}
-        ☎️ *رقم جوال الموزع*: ${user.distributorPhone}
-        ✅ *الحالة*: ${user.status}
-        📅 *تاريخ الطلب*: ${user.orderDate}
-        `;
-        bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
-    } else {
-        bot.sendMessage(chatId, "❌ عذرًا، لم أتمكن من العثور على بيانات لرقم الهوية المدخل.");
+        if (idNumber === '/start') return;
+
+        const user = data[idNumber];
+        if (user) {
+            const response = `
+            👤 *الاسم*: ${user.name}
+            🗺️ *المحافظة*: ${user.province}
+            🏙️ *المدينة*: ${user.city}
+            📍 *الحي / المنطقة*: ${user.area}
+            🆔 *هوية الموزع*: ${user.distributorId}
+            🏷️ *اسم الموزع*: ${user.distributorName}
+            ☎️ *رقم جوال الموزع*: ${user.distributorPhone}
+            ✅ *الحالة*: ${user.status}
+            📅 *تاريخ الطلب*: ${user.orderDate}
+            `;
+            bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+        } else {
+            bot.sendMessage(chatId, "❌ عذرًا، لم أتمكن من العثور على بيانات لرقم الهوية المدخل.");
+        }
+    } catch (error) {
+        console.error('❌ حدث خطأ أثناء معالجة الرسالة:', error.message);
+        bot.sendMessage(msg.chat.id, "⚠️ حدث خطأ غير متوقع. يرجى المحاولة لاحقًا.");
     }
 });
 
