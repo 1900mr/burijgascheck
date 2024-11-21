@@ -1,9 +1,17 @@
 const TelegramBot = require('node-telegram-bot-api');
 const ExcelJS = require('exceljs'); // استيراد مكتبة exceljs
 require('dotenv').config(); // إذا كنت تستخدم متغيرات بيئية
+const express = require('express'); // إضافة Express لتشغيل السيرفر
 
-// استبدال التوكن
-const token = process.env.TELEGRAM_BOT_TOKEN || '7201507244:AAFmUzJTZ0CuhWxTE_BjwQJ-XB3RXlYMKYU';
+// إعداد سيرفر Express
+const app = express();
+const port = process.env.PORT || 4000; // المنفذ الافتراضي
+app.get('/', (req, res) => {
+    res.send('🚀 The server is running successfully.');
+});
+
+// استبدل بالتوكن الخاص بك
+const token = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_TELEGRAM_BOT_TOKEN';
 
 // إنشاء البوت
 const bot = new TelegramBot(token, { polling: true });
@@ -18,12 +26,12 @@ async function loadDataFromExcel() {
         await workbook.xlsx.readFile('gas18-11-2024.xlsx'); // اسم الملف
         const worksheet = workbook.worksheets[0]; // أول ورقة عمل
 
-        worksheet.eachRow((row) => {
-            // قراءة القيم من الصفوف
+        worksheet.eachRow((row, rowNumber) => {
             const idNumber = row.getCell(1).value?.toString().trim(); // رقم الهوية
             const name = row.getCell(2).value?.toString().trim(); // اسم الطالب
             const phoneNumber = row.getCell(3).value?.toString().trim(); // رقم الجوال
             const province = row.getCell(4).value?.toString().trim(); // المحافظة
+            const district = row.getCell(12).value?.toString().trim(); // المدينة
             const city = row.getCell(5).value?.toString().trim(); // المدينة
             const area = row.getCell(6).value?.toString().trim(); // الحي/المنطقة
             const distributorId = row.getCell(7).value?.toString().trim(); // هوية الموزع
@@ -31,13 +39,13 @@ async function loadDataFromExcel() {
             const distributorPhone = row.getCell(9).value?.toString().trim(); // رقم الموزع
             const status = row.getCell(10).value?.toString().trim(); // الحالة
             const orderDate = row.getCell(11).value?.toString().trim(); // تاريخ الطلب
-            const district = row.getCell(12).value?.toString().trim();
 
             if (idNumber && name) {
                 data[idNumber] = {
                     name: name || "غير متوفر",
                     phoneNumber: phoneNumber || "غير متوفر",
                     province: province || "غير متوفر",
+                    district: district || "غير متوفر",
                     city: city || "غير متوفر",
                     area: area || "غير متوفر",
                     distributorId: distributorId || "غير متوفر",
@@ -45,18 +53,13 @@ async function loadDataFromExcel() {
                     distributorPhone: distributorPhone || "غير متوفر",
                     status: status || "غير متوفر",
                     orderDate: orderDate || "غير متوفر",
-                    district: district || "غير متوفر",
                 };
             }
         });
 
-        console.log('تم تحميل البيانات بنجاح.');
+        console.log('✅ تم تحميل البيانات بنجاح.');
     } catch (error) {
-        console.error('حدث خطأ أثناء قراءة ملف Excel:', error.message);
-        // إضافة رسالة خطأ للمستخدم في حال فشل التحميل
-        if (process.env.ADMIN_CHAT_ID) {
-            bot.sendMessage(process.env.ADMIN_CHAT_ID, "حدث خطأ أثناء تحميل البيانات من ملف Excel.");
-        }
+        console.error('❌ حدث خطأ أثناء قراءة ملف Excel:', error.message);
     }
 }
 
@@ -65,60 +68,38 @@ loadDataFromExcel();
 
 // الرد على أوامر البوت
 bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    if (chatId) {
-        bot.sendMessage(chatId, "مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
-    }
+    bot.sendMessage(
+        msg.chat.id,
+        "👋 مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.\n🔍 للبحث برقم الهوية."
+    );
 });
 
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const idNumber = msg.text.trim(); // رقم الهوية
 
-    if (!chatId) {
-        console.error('chat_id فارغ');
-        return;
-    }
-
-    if (idNumber === '/start') return; // تجاهل الأمر start
-
-    if (!idNumber) {
-        bot.sendMessage(chatId, "❌ يُرجى إدخال رقم الهوية.");
-        return;
-    }
+    if (idNumber === '/start') return;
 
     const user = data[idNumber];
     if (user) {
         const response = `
-📝 **البيانات الخاصة بك:**
-- **الاسم:** ${user.name}
-- **المحافظة:** ${user.province}
-- **المدينة:** ${user.city}
-- **الحي / المنطقة:** ${user.area}
-- **هوية الموزع:** ${user.distributorId}
-- **اسم الموزع:** ${user.distributorName}
-- **رقم جوال الموزع:** ${user.distributorPhone}
-- **الحالة:** ${user.status}
-- **تاريخ الطلب:** ${user.orderDate}
+        👤 *الاسم*: ${user.name}
+        🗺️ *المحافظة*: ${user.province}
+        🏙️ *المدينة*: ${user.city}
+        📍 *الحي / المنطقة*: ${user.area}
+        🏷️ *اسم الموزع*: ${user.distributorName}
+        ☎️ *رقم جوال الموزع*: ${user.distributorPhone}
+        🆔 *هوية الموزع*: ${user.distributorId}
+        ✅ *الحالة*: ${user.status}
+        📅 *تاريخ الطلب*: ${user.orderDate}
         `;
         bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
     } else {
-        bot.sendMessage(chatId, "❌ عذرًا، لم أتمكن من العثور على بيانات لرقم الهوية المدخل.\nيرجى التحقق من الرقم وإعادة المحاولة.");
+        bot.sendMessage(chatId, "❌ عذرًا، لم أتمكن من العثور على بيانات لرقم الهوية المدخل.");
     }
 });
 
-// معالج الأخطاء العامة للبوت
-bot.on("polling_error", (error) => {
-    console.error("خطأ في polling:", error.code); // طباعة الخطأ
-    if (process.env.ADMIN_CHAT_ID) {
-        bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في البوت: ${error.code}`);
-    }
-});
-
-// إضافة سجل للأخطاء غير المعروفة
-bot.on("webhook_error", (error) => {
-    console.error("خطأ في Webhook:", error);
-    if (process.env.ADMIN_CHAT_ID) {
-        bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في Webhook: ${error.message}`);
-    }
+// تشغيل السيرفر
+app.listen(port, () => {
+    console.log(`🚀 Server is running on port ${port}`);
 });
