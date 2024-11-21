@@ -1,22 +1,12 @@
 const TelegramBot = require('node-telegram-bot-api');
 const ExcelJS = require('exceljs'); // استيراد مكتبة exceljs
-require('dotenv').config(); // استخدام متغيرات بيئية
-const express = require('express'); // إضافة Express لتشغيل السيرفر
+require('dotenv').config(); // إذا كنت تستخدم متغيرات بيئية
 
-// إعداد سيرفر Express (لتشغيل التطبيق على Render أو بيئة أخرى)
-const app = express();
-app.use(express.json()); // للتعامل مع طلبات JSON
+// استبدال التوكن
+const token = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_BOT_TOKEN';
 
-// إعداد المنفذ وURL الخاص بـ Webhook
-const port = process.env.PORT || 4000;
-const webhookUrl = process.env.WEBHOOK_URL || `https://your-webhook-url.com`;
-
-// استبدل بالتوكن الخاص بك
-const token = process.env.TELEGRAM_BOT_TOKEN || '7201507244:AAFmUzJTZ0CuhWxTE_BjwQJ-XB3RXlYMKYU';
-
-// إنشاء البوت باستخدام Webhook
-const bot = new TelegramBot(token, { webHook: true });
-bot.setWebHook(`${webhookUrl}/bot${token}`);
+// إنشاء البوت
+const bot = new TelegramBot(token, { polling: true });
 
 // تخزين البيانات من Excel
 let data = {};
@@ -60,57 +50,50 @@ async function loadDataFromExcel() {
             }
         });
 
-        console.log('✅ تم تحميل البيانات من Excel بنجاح.');
+        console.log('تم تحميل البيانات بنجاح.');
     } catch (error) {
-        console.error('❌ حدث خطأ أثناء قراءة ملف Excel:', error.message);
+        console.error('حدث خطأ أثناء قراءة ملف Excel:', error.message);
+        // إضافة رسالة خطأ للمستخدم في حال فشل التحميل
+        bot.sendMessage(process.env.ADMIN_CHAT_ID, "حدث خطأ أثناء تحميل البيانات من ملف Excel.");
     }
 }
 
 // تحميل البيانات عند بدء التشغيل
 loadDataFromExcel();
 
-// إعداد مسار Webhook
-app.post(`/bot${token}`, (req, res) => {
-    bot.processUpdate(req.body); // تمرير التحديثات إلى البوت
-    res.sendStatus(200);
-});
-
 // الرد على أوامر البوت
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "👋 مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
+    bot.sendMessage(msg.chat.id, "مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
 });
 
-bot.on('message', async (msg) => {
-    try {
-        const chatId = msg.chat.id;
-        const idNumber = msg.text.trim(); // رقم الهوية
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const idNumber = msg.text.trim(); // رقم الهوية
 
-        if (idNumber === '/start') return;
+    if (idNumber === '/start') return;
 
-        const user = data[idNumber];
-        if (user) {
-            const response = `
-            👤 *الاسم*: ${user.name}
-            🗺️ *المحافظة*: ${user.province}
-            🏙️ *المدينة*: ${user.city}
-            📍 *الحي / المنطقة*: ${user.area}
-            🆔 *هوية الموزع*: ${user.distributorId}
-            🏷️ *اسم الموزع*: ${user.distributorName}
-            ☎️ *رقم جوال الموزع*: ${user.distributorPhone}
-            ✅ *الحالة*: ${user.status}
-            📅 *تاريخ الطلب*: ${user.orderDate}
-            `;
-            bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
-        } else {
-            bot.sendMessage(chatId, "❌ عذرًا، لم أتمكن من العثور على بيانات لرقم الهوية المدخل.");
-        }
-    } catch (error) {
-        console.error('❌ حدث خطأ أثناء معالجة الرسالة:', error.message);
-        bot.sendMessage(msg.chat.id, "⚠️ حدث خطأ غير متوقع. يرجى المحاولة لاحقًا.");
+    const user = data[idNumber];
+    if (user) {
+        const response = `
+📝 **البيانات الخاصة بك:**
+- **الاسم:** ${user.name}
+- **المحافظة:** ${user.province}
+- **المدينة:** ${user.city}
+- **الحي / المنطقة:** ${user.area}
+- **هوية الموزع:** ${user.distributorId}
+- **اسم الموزع:** ${user.distributorName}
+- **رقم جوال الموزع:** ${user.distributorPhone}
+- **الحالة:** ${user.status}
+- **تاريخ الطلب:** ${user.orderDate}
+        `;
+        bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } else {
+        bot.sendMessage(chatId, "❌ عذرًا، لم أتمكن من العثور على بيانات لرقم الهوية المدخل.\nيرجى التحقق من الرقم وإعادة المحاولة.");
     }
 });
 
-// تشغيل السيرفر
-app.listen(port, () => {
-    console.log(`🚀 Server is running on port ${port}`);
+// معالج الأخطاء العامة للبوت
+bot.on("polling_error", (error) => {
+    console.error("خطأ في polling:", error.code); // يمكنك إضافة المزيد من المعالجة هنا
+    bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في البوت: ${error.code}`);
 });
