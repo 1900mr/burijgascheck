@@ -13,8 +13,17 @@ app.get('/', (req, res) => {
 // استبدل بالتوكن الخاص بك
 const token = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_TELEGRAM_BOT_TOKEN';
 
-// إنشاء البوت
-const bot = new TelegramBot(token, { polling: true });
+// حذف Webhook قبل بدء تشغيل البوت
+const bot = new TelegramBot(token, { polling: false });
+bot.deleteWebhook().then(() => {
+    console.log('✅ Webhook has been deleted successfully.');
+    
+    // تفعيل Polling بعد التأكد من حذف Webhook
+    bot.startPolling();
+    console.log('🚀 Bot is now running with polling.');
+}).catch((error) => {
+    console.error('❌ Failed to delete Webhook:', error.message);
+});
 
 // تخزين البيانات من Excel
 let data = {};
