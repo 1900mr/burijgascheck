@@ -3,7 +3,7 @@ const ExcelJS = require('exceljs'); // استيراد مكتبة exceljs
 require('dotenv').config(); // إذا كنت تستخدم متغيرات بيئية
 
 // استبدال التوكن
-const token = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_BOT_TOKEN';
+const token = process.env.TELEGRAM_BOT_TOKEN || '7201507244:AAFmUzJTZ0CuhWxTE_BjwQJ-XB3RXlYMKYU';
 
 // إنشاء البوت
 const bot = new TelegramBot(token, { polling: true });
