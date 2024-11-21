@@ -54,7 +54,9 @@ async function loadDataFromExcel() {
     } catch (error) {
         console.error('حدث خطأ أثناء قراءة ملف Excel:', error.message);
         // إضافة رسالة خطأ للمستخدم في حال فشل التحميل
-        bot.sendMessage(process.env.ADMIN_CHAT_ID, "حدث خطأ أثناء تحميل البيانات من ملف Excel.");
+        if (process.env.ADMIN_CHAT_ID) {
+            bot.sendMessage(process.env.ADMIN_CHAT_ID, "حدث خطأ أثناء تحميل البيانات من ملف Excel.");
+        }
     }
 }
 
@@ -64,12 +66,19 @@ loadDataFromExcel();
 // الرد على أوامر البوت
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId, "مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
+    if (chatId) {
+        bot.sendMessage(chatId, "مرحبًا! أدخل رقم الهوية للحصول على التفاصيل.");
+    }
 });
 
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const idNumber = msg.text.trim(); // رقم الهوية
+
+    if (!chatId) {
+        console.error('chat_id فارغ');
+        return;
+    }
 
     if (idNumber === '/start') return; // تجاهل الأمر start
 
@@ -101,11 +110,15 @@ bot.on('message', (msg) => {
 // معالج الأخطاء العامة للبوت
 bot.on("polling_error", (error) => {
     console.error("خطأ في polling:", error.code); // طباعة الخطأ
-    bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في البوت: ${error.code}`);
+    if (process.env.ADMIN_CHAT_ID) {
+        bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في البوت: ${error.code}`);
+    }
 });
 
 // إضافة سجل للأخطاء غير المعروفة
 bot.on("webhook_error", (error) => {
     console.error("خطأ في Webhook:", error);
-    bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في Webhook: ${error.message}`);
+    if (process.env.ADMIN_CHAT_ID) {
+        bot.sendMessage(process.env.ADMIN_CHAT_ID, `حدث خطأ في Webhook: ${error.message}`);
+    }
 });
